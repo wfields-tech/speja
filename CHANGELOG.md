@@ -5,6 +5,17 @@ reports are that version's. `speja --version` prints the same thing.
 
 ## Unreleased
 
+* **`ignore_single_line: 'yes'` is applied to parameter lists.** Set in `function_019` or
+  `procedure_013`, it was ignored without a warning, and a list written over several lines was
+  joined when it fits. Such a list now has one parameter per line, as in VSG; one on a single line
+  stays there while it fits. Values of the rules' other options that ask for a structure the
+  formatter does not produce are reported as unsupported.
+
+* **`speja: keep_line_breaks`** keeps `enumerations`, `logical_operators` and `concatenations` on
+  several lines when the source writes them so. VSG has no rule that joins them and no setting
+  for it. Off by default: without it the layout still does not depend on the source's line
+  breaks.
+
 * **Assignments in generate bodies are aligned.** `concurrent_006` aligned `<=` among the
   statements of an architecture or block, but inside a generate statement every `<=` got a single
   space, and an alignment that was there was removed.
