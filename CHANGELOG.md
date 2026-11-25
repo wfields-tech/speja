@@ -5,6 +5,10 @@ reports are that version's. `speja --version` prints the same thing.
 
 ## Unreleased
 
+* **`speja: trailing_operators`** puts `concatenations` (`&`) or `logical_operators` at the end of a
+  line instead of the start of the next one. VSG has no rule for it. With a comment after each
+  operator, the default layout put the operator on a line between its operands.
+
 * **`--quality_report` issues have a `check_name`.** GitLab requires it in a code-quality
   report; VSG's report, which speja follows, does not have it.
 

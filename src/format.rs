@@ -14,7 +14,7 @@ use vhdl_syntax::tokens::token::requires_separator;
 use vhdl_syntax::tokens::{Keyword as Kw, TokenKind as T, TriviaPiece};
 
 use crate::Parsed;
-use crate::config::{FormatConfig, KeepLineBreaks, KeywordCase};
+use crate::config::{FormatConfig, KeepLineBreaks, KeywordCase, TrailingOperators};
 use crate::doc::{Doc, GroupId, display_width};
 use crate::indent::Part;
 
@@ -1165,6 +1165,20 @@ impl<'a> Builder<'a> {
             && (starts_line(operator) || self.parsed.next_token(operator).is_some_and(starts_line))
     }
 
+    /// Whether a binary operator ends the line in a folded chain. One behind a comment starts a
+    /// line whatever the configuration says, as the comment ends the line of the operand.
+    fn is_trailing(&self, operator: &SyntaxToken) -> bool {
+        let operators = match operator.kind() {
+            T::Keyword(Kw::And | Kw::Or | Kw::Nand | Kw::Nor | Kw::Xor | Kw::Xnor) => {
+                TrailingOperators::LogicalOperators
+            }
+            T::Concat => TrailingOperators::Concatenations,
+            _ => return false,
+        };
+        self.cfg.trailing_operators.contains(&operators)
+            && !operator.leading_trivia().contains_comments()
+    }
+
     /// Interface clauses and map aspects: always one element per line.
     fn broken_parens(&mut self, n: &SyntaxNode) -> Doc {
         let children: Vec<SyntaxElement> = n.children_with_tokens().collect();
@@ -1615,6 +1629,11 @@ impl<'a> Builder<'a> {
                     .filter(|t| binary_precedence(t.kind()).is_some())
                 {
                     broken |= self.keeps_operator_break(&t);
+                    if self.is_trailing(&t) {
+                        out.push(self.tok(&t));
+                        out.push(Doc::Line);
+                        continue;
+                    }
                     out.push(Doc::Line);
                 }
                 out.push(self.elem(&c));

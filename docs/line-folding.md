@@ -44,7 +44,7 @@ Two special forms:
 |---|---|---|
 | Parenthesized list (call, aggregate, parameter list, index constraint, enumeration, sensitivity list) | after `(`, after each `,` / `;`, before `)` | one element per line, indented one level, `)` on its own line |
 | Interface clause, generic/port map | always broken | one element per line, `:` / `=>` aligned |
-| Operator chain of equal precedence | before each operator | operator first on each continuation line, aligned with the first operand |
+| Operator chain of equal precedence | before each operator (after it with `trailing_operators`) | operator first on each continuation line (last on the line before), aligned with the first operand |
 | Parenthesized expression | inside the parentheses | contents aligned after `(` |
 | Declaration value (`:= value`) | before `:=`; for calls, aggregates and qualified expressions after `:=` | the value on an indented continuation line |
 | Object declaration subtype (`signal s : subtype`) | after `:` | the subtype on an indented continuation line |
@@ -75,6 +75,26 @@ valid <= input_valid
 ```
 
 Conditional assignments are the exception: `else` ends its line, matching VSG's default layout.
+
+VSG has no rule about the place of an operator and leaves it where it is. `trailing_operators` (an
+extension) names the operators that end a line instead: `logical_operators` (`and`, `or`, ...)
+and `concatenations` (`&`).
+
+```yaml
+speja:
+  trailing_operators: [concatenations]
+```
+
+```vhdl
+flags <= x"00" &
+         '0' &          -- reserved
+         has_checksum & -- bit 6
+         crc_error;     -- bit 0
+```
+
+It suits chains with a comment per line: a comment stays behind the token it follows, so one
+written after a leading operator would part the operator from its operand. An operator behind a
+comment still starts a line.
 
 ## Continuation indentation
 

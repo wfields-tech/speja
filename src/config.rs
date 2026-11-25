@@ -44,6 +44,30 @@ impl KeepLineBreaks {
     }
 }
 
+/// Binary operators whose place on a line is configurable (`speja: trailing_operators`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum TrailingOperators {
+    /// `and`, `or`, `xor`, ...
+    LogicalOperators,
+    /// `&`.
+    Concatenations,
+}
+
+impl TrailingOperators {
+    const NAMES: [(&'static str, TrailingOperators); 2] = [
+        ("logical_operators", TrailingOperators::LogicalOperators),
+        ("concatenations", TrailingOperators::Concatenations),
+    ];
+
+    fn parse(name: &str) -> Option<TrailingOperators> {
+        Self::NAMES
+            .iter()
+            .find(|(n, _)| *n == name)
+            .map(|(_, operators)| *operators)
+    }
+}
+
 /// Formatting policy. Everything here influences canonical output.
 ///
 /// `#[non_exhaustive]`: new options are added here on most releases, so build one from
@@ -100,6 +124,9 @@ pub struct FormatConfig {
     /// Other constructs that stay on several lines when the source writes them so (speja
     /// extension `speja: keep_line_breaks`).
     pub keep_line_breaks: Vec<KeepLineBreaks>,
+    /// Operators that end a line in a folded chain instead of starting the next one (speja
+    /// extension `speja: trailing_operators`).
+    pub trailing_operators: Vec<TrailingOperators>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -132,6 +159,7 @@ impl Default for FormatConfig {
             reflow_comments: false,
             keep_parameter_lists: Vec::new(),
             keep_line_breaks: Vec::new(),
+            trailing_operators: Vec::new(),
         }
     }
 }
@@ -512,6 +540,20 @@ impl Config {
                         .map(|v| {
                             v.as_str()
                                 .and_then(KeepLineBreaks::parse)
+                                .ok_or_else(expected)
+                        })
+                        .collect::<Result<_, _>>()?;
+                }
+                "trailing_operators" => {
+                    let names = TrailingOperators::NAMES.map(|(name, _)| name).join(", ");
+                    let expected = || format!("`trailing_operators` must be a list of: {names}");
+                    self.format.trailing_operators = value
+                        .as_sequence()
+                        .ok_or_else(expected)?
+                        .iter()
+                        .map(|v| {
+                            v.as_str()
+                                .and_then(TrailingOperators::parse)
                                 .ok_or_else(expected)
                         })
                         .collect::<Result<_, _>>()?;
@@ -1520,6 +1562,20 @@ mod tests {
         );
         for bad in ["enumerations", "[enumeration]", "[1]"] {
             let error = Config::parse(&format!("speja: {{keep_line_breaks: {bad}}}")).unwrap_err();
+            assert!(error.contains("logical_operators"), "{error}");
+        }
+    }
+
+    #[test]
+    fn trailing_operators_names() {
+        let cfg = Config::parse("speja: {trailing_operators: [concatenations]}").unwrap();
+        assert_eq!(
+            cfg.format.trailing_operators,
+            [TrailingOperators::Concatenations]
+        );
+        for bad in ["concatenations", "[enumerations]", "[1]"] {
+            let error =
+                Config::parse(&format!("speja: {{trailing_operators: {bad}}}")).unwrap_err();
             assert!(error.contains("logical_operators"), "{error}");
         }
     }
