@@ -5,6 +5,11 @@ reports are that version's. `speja --version` prints the same thing.
 
 ## Unreleased
 
+* **The lint layer sees through `u : component name`.** The instantiated unit was read as
+  `componentname`, which no file declares, so everything connected to such an instance counted
+  as driven and `lint_730` never reported it. `--fix` adds the keyword by default
+  (`instantiation_033`), so formatting a file could hide its findings.
+
 * **`ignore_single_line: 'yes'` is applied to parameter lists.** Set in `function_019` or
   `procedure_013`, it was ignored without a warning, and a list written over several lines was
   joined when it fits. Such a list now has one parameter per line, as in VSG; one on a single line
