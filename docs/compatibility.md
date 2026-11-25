@@ -52,7 +52,7 @@ with `-c` or by copying it to one of these names.
 `--fix`, `-fp`, `-j`, `-js`, `-of {vsg,syntastic,summary}`, `-b`, `-oc`, `-rc`, `--style
 {indent_only,jcl}`, `-v`, `-ap`, `--fix_only`, `--stdin`, `--force_fix`, `--quality_report`,
 `-p` and `--debug`. The console report, JSON, JUnit and GitLab code-quality files have VSG's
-layout.
+layout; the code-quality issues also carry `check_name`, which GitLab requires.
 
 | Argument | Difference |
 |---|---|

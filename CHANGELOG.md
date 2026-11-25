@@ -5,6 +5,9 @@ reports are that version's. `speja --version` prints the same thing.
 
 ## Unreleased
 
+* **`--quality_report` issues have a `check_name`.** GitLab requires it in a code-quality
+  report; VSG's report, which speja follows, does not have it.
+
 * **Layout findings carry the rule VSG reports them with.** The learned table that names the
   VSG rule for each formatting change looked at the token and its own syntax node only, which
   many constructs share: a blank line before an architecture's `begin` was reported as

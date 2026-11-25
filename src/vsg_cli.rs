@@ -911,6 +911,8 @@ fn quality_report(results: &[FileResult]) -> String {
             };
             serde_json::json!({
                 "description": format!("{} :: {}", d.rule, d.message),
+                // Required by GitLab; VSG leaves it out.
+                "check_name": d.rule,
                 "fingerprint": fingerprint(&key),
                 "severity": if d.severity == "warning" { "minor" } else { "critical" },
                 "categories": [category],
