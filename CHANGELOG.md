@@ -5,6 +5,10 @@ reports are that version's. `speja --version` prints the same thing.
 
 ## Unreleased
 
+* **A comment after the last element of a list no longer breaks the element.** In a parameter
+  list, call or aggregate, the `(7 downto 0)` in front of such a comment was folded over three
+  lines. Port and generic clauses already did this right.
+
 * **The lint layer sees through `u : component name`.** The instantiated unit was read as
   `componentname`, which no file declares, so everything connected to such an instance counted
   as driven and `lint_730` never reported it. `--fix` adds the keyword by default
