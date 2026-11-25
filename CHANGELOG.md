@@ -5,6 +5,9 @@ reports are that version's. `speja --version` prints the same thing.
 
 ## Unreleased
 
+* **`--quality_report` issues have a `check_name`.** GitLab requires it in a code-quality
+  report; VSG's report, which speja follows, does not have it.
+
 * **A comment after the last element of a list no longer breaks the element.** In a parameter
   list, call or aggregate, the `(7 downto 0)` in front of such a comment was folded over three
   lines. Port and generic clauses already did this right.

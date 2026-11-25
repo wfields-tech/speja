@@ -997,6 +997,17 @@ fn every_report_says_what_a_rule_can_prove() {
     // GitLab: the format's own categories, one per class.
     let issues: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&quality).unwrap()).unwrap();
+    // GitLab requires the rule in a field of its own.
+    for issue in issues.as_array().unwrap() {
+        let rule = issue["check_name"].as_str().unwrap();
+        assert!(
+            issue["description"]
+                .as_str()
+                .unwrap()
+                .starts_with(&format!("{rule} :: ")),
+            "{issue}"
+        );
+    }
     let category_of = |rule: &str| -> String {
         issues
             .as_array()
