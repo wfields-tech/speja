@@ -5,6 +5,10 @@ reports are that version's. `speja --version` prints the same thing.
 
 ## Unreleased
 
+* **`case_exceptions` takes patterns**: `*` and `?` as wildcards, or `re:` and a regular expression.
+  Names that match keep their spelling, for families such as generated register map signals,
+  where listing every name is not practical. A regular expression that does not parse is an error.
+
 * **`speja: trailing_operators`** puts `concatenations` (`&`) or `logical_operators` at the end of a
   line instead of the start of the next one. VSG has no rule for it. With a comment after each
   operator, the default layout put the operator on a line between its operands.

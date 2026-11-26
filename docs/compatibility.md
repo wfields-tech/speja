@@ -130,6 +130,10 @@ could not be processed, missing files and invalid arguments).
   does not depend on the source's line breaks: an aggregate is folded when it does not fit,
   with the first `(` after the assignment operator and one element per line. Options asking
   for another structure are reported as unsupported (VSG issue #1502).
+* **Patterns in `case_exceptions`.** An entry may contain the wildcards `*` and `?`, or be `re:`
+  and a regular expression for the whole name, such as `re:w_regmap_[A-Z]\w*`. A name that
+  matches keeps the spelling it is declared with, and its uses follow the declaration. Patterns
+  are case-sensitive. VSG takes every entry literally.
 * **Parameter lists.** `function_019` and `procedure_013` put one parameter on each line even
   when the list fits. speja folds a list when it does not fit. With `ignore_single_line: 'yes'`
   it also keeps a list on several lines when the source writes it so, as VSG does. Other options

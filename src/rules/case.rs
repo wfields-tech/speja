@@ -4,6 +4,7 @@
 //! VHDL identifiers are case-insensitive, so every fix here is a meaning-preserving rename of a
 //! single token. Extended identifiers (`\Name\`) are case-sensitive and never touched.
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use regex::Regex;
@@ -24,6 +25,29 @@ fn is_extended(t: &SyntaxToken) -> bool {
     t.text().as_bytes().first() == Some(&b'\\')
 }
 
+thread_local! {
+    /// The regular expressions of `case_exceptions`, which are asked about every name.
+    static PATTERNS: RefCell<HashMap<String, Option<Regex>>> = RefCell::default();
+}
+
+/// Whether an entry of `case_exceptions` is a pattern that `name` matches: `*` and `?` are
+/// wildcards, and `re:` takes a regular expression for the whole name.
+fn is_pattern_for(exception: &str, name: &str) -> bool {
+    let Some(expression) = exception.strip_prefix("re:") else {
+        return exception.contains(['*', '?'])
+            && crate::config::glob(exception.as_bytes(), name.as_bytes());
+    };
+    PATTERNS.with_borrow_mut(|patterns| {
+        if !patterns.contains_key(expression) {
+            let pattern = Regex::new(&format!("^(?:{expression})$")).ok();
+            patterns.insert(expression.to_owned(), pattern);
+        }
+        patterns[expression]
+            .as_ref()
+            .is_some_and(|re| re.is_match(name))
+    })
+}
+
 /// The spelling a case policy requires for `name`: `Ok(None)` if it complies, `Ok(Some(fixed))`
 /// with the fixed spelling, or `Err(())` if it does not comply and cannot be fixed mechanically.
 fn required(settings: &RuleSettings, name: &str) -> Result<Option<String>, ()> {
@@ -34,6 +58,14 @@ fn required(settings: &RuleSettings, name: &str) -> Result<Option<String>, ()> {
         .find(|e| e.eq_ignore_ascii_case(name))
     {
         return Ok((exact != name).then(|| exact.to_owned()));
+    }
+    // A name that matches a pattern keeps the spelling it is declared with.
+    if settings
+        .option_list("case_exceptions")
+        .into_iter()
+        .any(|e| is_pattern_for(e, name))
+    {
+        return Ok(None);
     }
     let prefix = settings
         .option_list("prefix_exceptions")
@@ -1249,6 +1281,43 @@ mod tests {
         assert!(
             !swapped.iter().any(|(r, _)| r.starts_with("bit_string")),
             "{swapped:?}"
+        );
+    }
+
+    #[test]
+    fn case_exceptions_can_be_patterns() {
+        let src = "entity e is\n  port (\n    i_status_MyReg_field : in bit;\n    i_Other : in bit\n  );\n\
+                   end entity e;\n\narchitecture rtl of e is\n\n  signal w_regmap_MyReg_field : bit;\n  \
+                   signal W_REGMAP_X : bit;\n\nbegin\n\n  \
+                   W_regmap_myreg_FIELD <= I_status_myreg_field and i_other;\n  w_regmap_x <= i_Other;\n\n\
+                   end architecture rtl;\n";
+        let config = Config::parse(
+            "rule:\n  signal_004:\n    case_exceptions: ['w_regmap_*']\n  port_010:\n    case_exceptions: ['re:[io]_status_[A-Z]\\w*']\n",
+        )
+        .unwrap();
+        let fixed = String::from_utf8(
+            crate::fix::fix(&Parsed::new(src.as_bytes().to_vec()), &config)
+                .unwrap()
+                .output,
+        )
+        .unwrap();
+        // Kept as declared, and the uses follow the declaration.
+        assert_eq!(fixed.matches("w_regmap_MyReg_field").count(), 2, "{fixed}");
+        assert_eq!(fixed.matches("i_status_MyReg_field").count(), 2, "{fixed}");
+        // Not matched (patterns are case-sensitive), so in lower case.
+        assert_eq!(fixed.matches("w_regmap_x").count(), 2, "{fixed}");
+        assert_eq!(fixed.matches("i_other").count(), 3, "{fixed}");
+        let again = crate::rules::check(&Parsed::new(fixed.clone().into_bytes()), &config);
+        assert!(
+            !again
+                .iter()
+                .any(|v| matches!(v.rule, "signal_004" | "port_010")),
+            "{fixed}"
+        );
+        assert!(
+            Config::parse("rule: {signal_004: {case_exceptions: ['re:(']}}")
+                .unwrap_err()
+                .contains("re:(")
         );
     }
 

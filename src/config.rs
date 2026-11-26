@@ -1480,6 +1480,17 @@ fn merge_layer(layer: &mut RuleLayer, settings: &Value, name: &str) -> Result<()
                     },
                 );
             }
+            "case_exceptions" => {
+                for pattern in value.as_sequence().into_iter().flatten() {
+                    let pattern = pattern.as_str().unwrap_or_default();
+                    if let Some(expression) = pattern.strip_prefix("re:") {
+                        regex::Regex::new(expression).map_err(|e| {
+                            format!("`{name}.{key}`: `{pattern}` is not a regular expression: {e}")
+                        })?;
+                    }
+                }
+                layer.options.insert(key.to_owned(), value.clone());
+            }
             // VSG phases do not exist in speja; see docs/compatibility.md.
             "phase" | "user_error_message" => {}
             _ => {
